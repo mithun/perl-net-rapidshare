@@ -10,14 +10,15 @@ use version; our $VERSION = qv("0.01");
 ### Interface
 sub new{
 	my $class = shift;
+	my %h = ();
 	if(@_){
 		my %valid = ("type" => 1, "login" => 1, "password"=> 1);
-		my (%h) = @_;
+		(%h) = @_;
 		foreach (keys %h){croak "Invalid Option : $_" unless $valid{$_};}
 		croak "Invalid Type $h{type}" unless _valid_type($h{type});
-		return bless {%h, "_url" => "http://api.rapidshare.com/cgi-bin/rsapi.cgi?"}, $class;
 	}
-	return bless {"_url" => "http://api.rapidshare.com/cgi-bin/rsapi.cgi?"}, $class;
+	$h{"_url"} = "http://api.rapidshare.com/cgi-bin/rsapi.cgi?";
+	return bless {%h}, $class;
 }
 
 sub type{
@@ -79,32 +80,43 @@ sub getapicpu{
 	my $self = shift;
 	my $sub = "getapicpu_v1";
 	my $call = $self->{_url}."sub=${sub}";
-	return $self->_get_resp($call);
+	my $response = return $self->_get_resp($call) or return;
+	my @curr_max = split(/,/, $response);
+	return @curr_max;
 }
 
 sub checkincomplete{
 	my $self = shift;
-	my $fileid = shift;
-	my $killcode = shift;
+	my $fileid = shift or croak "fileid is required";
+	my $killcode = shift or croak "killcode is required";
 	
 	my $sub = "checkincomplete_v1";
-	my $call = $self->{_url}."sub=${sub}&fileid=${fileid}&killcode=${killcode}";
+	my $call = $self->{_url}."sub=${sub}";
+	$call .= "&fileid=${fileid}";
+	$call .= "&killcode=${killcode}";
+	
 	return $self->_get_resp($call);
 }
 
 sub renamefile{
 	my $self = shift;
-	my $fileid = shift;
-	my $killcode = shift;
+	my $fileid = shift or croak "fileid is required";
+	my $killcode = shift or croak "killcode is required";
+	my $newname = shift or croak "new name is required";
 	
 	my $sub = "renamefile_v1";
-	my $call = $self->{_url}."sub=${sub}&fileid=${fileid}&killcode=${killcode}";
+	my $call = $self->_default_url($sub) or return;
+	$call .= "&fileid=${fileid}";
+	$call .= "&killcode=${killcode}";
+	$call .= "&newname=${newname}";
+	
 	return $self->_get_resp($call);
 }
 
 sub movefilestorealfolder {
 	my $self = shift;
-	my $realfolderid = shift;
+	my $realfolderid = shift or croak "realfolderid is required";
+	croak "fileids are required" unless @_;
 	
 	my $fileids;
 	my @fileids_arr;
@@ -130,8 +142,8 @@ sub movefilestorealfolder {
 
 sub renamerealfolder{
 	my $self = shift;
-	my $realfolderid = shift;
-	my $newname = shift;
+	my $realfolderid = shift or croak "realfolderid is required";
+	my $newname = shift or croak "newname is required";
 	
 	if (length($newname) > 100){
 		$self->{errstr} = "Length of newname is more than 100 Chars";
@@ -148,6 +160,7 @@ sub renamerealfolder{
 
 sub deletefiles {
 	my $self = shift;
+	croak "fileids are required" unless @_;
 	
 	my $fileids;
 	my @fileids_arr;
