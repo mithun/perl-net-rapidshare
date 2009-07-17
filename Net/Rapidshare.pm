@@ -15,7 +15,13 @@ sub new {
     my $class = shift;
     my %h     = ();
     if (@_) {
-        my %valid = ( "type" => 1, "login" => 1, "password" => 1 );
+        my %valid = (
+            "type"     => 1,
+            "login"    => 1,
+            "password" => 1,
+            "cookie"   => 1,
+        );
+        croak "Uneven number of options passed" if ( @_ % 2 );
         (%h) = @_;
         foreach ( keys %h ) { croak "Invalid Option : $_" unless $valid{$_}; }
         croak "Invalid Type $h{type}" unless _valid_type( $h{type} );
@@ -123,7 +129,7 @@ sub renamefile {
     my $newname  = shift or croak "new name is required, but missing";
 
     my $sub = "renamefile_v1";
-    my $call = $self->_default_url($sub) or return;
+    my $call = $self->_default_call($sub) or return;
     $call .= "&fileid=${fileid}";
     $call .= "&killcode=${killcode}";
     $call .= "&newname=${newname}";
@@ -203,8 +209,8 @@ sub deletefiles {
 
 sub addrealfolder {
     my $self   = shift;
-    my $name   = shift;
-    my $parent = shift or 0;
+    my $name   = shift or croak "folder name is required, but missing";
+    my $parent = shift;
 
     if ( length($name) > 100 ) {
         $self->{errstr} = "Length of name is greater than 100 bytes";
@@ -214,13 +220,15 @@ sub addrealfolder {
     my $sub = "addrealfolder_v1";
     my $call = $self->_default_call($sub) or return;
     $call .= "&name=${name}";
-    $call .= "&parent=${parent}";
+    if   ($parent) { $call .= "&parent=${parent}"; }
+    else           { $call .= "&parent=0"; }
 
     my $response = $self->_get_resp($call);
     if ( $response eq '-1' ) {
         $self->{errstr} = "No space available";
         return;
     }
+
     return $response;
 }
 
@@ -238,12 +246,13 @@ sub delrealfolder {
 sub moverealfolder {
     my $self       = shift;
     my $realfolder = shift or croak "realfolderid is required, but missing";
-    my $newparent  = shift or 0;
+    my $newparent  = shift;
 
     my $sub = "moverealfolder_v1";
     my $call = $self->_default_call($sub) or return;
     $call .= "&realfolder=${realfolder}";
-    $call .= "&newparent=${newparent}";
+    if   ($newparent) { $call .= "&newparent=${newparent}"; }
+    else              { $call .= "&newparent=0"; }
 
     return $self->_get_resp($call);
 }
@@ -253,12 +262,13 @@ sub listfiles {
 
     my %options;
     %options = %{ _read_opts(@_) } if @_;
-    my ( $realfolder, $filename, $fields, $order, $desc ) = '0';
+    my ( $realfolder, $filename, $fields, $order, $desc );
+    $realfolder = "all";
     $realfolder = $options{'realfolder'} if exists $options{'realfolder'};
-    $filename   = $options{'filename'}   if exists $options{'filename'};
-    $fields     = $options{'fields'}     if exists $options{'fields'};
-    $order      = $options{'order'}      if exists $options{'order'};
-    $desc       = $options{'desc'}       if exists $options{'desc'};
+    $filename   = $options{'filename'} if exists $options{'filename'};
+    $fields     = $options{'fields'} if exists $options{'fields'};
+    $order      = $options{'order'} if exists $options{'order'};
+    $desc       = $options{'desc'} if exists $options{'desc'};
 
     my $sub = "listfiles_v1";
     my $call = $self->_default_call($sub) or return;
@@ -266,9 +276,10 @@ sub listfiles {
     $call .= "&filename=${filename}" if $filename;
     $call .= "&fields=${fields}" if $fields;
     $call .= "&order=${order}" if $order;
-    $call .= "&desc=${desc}";
+    $call .= "&desc=1" if $desc;
 
     my $response = $self->_get_resp($call) or return;
+    return ($response) if ( uc($response) eq 'NONE' );
     my @list = split( /\n/, $response );
     return @list if wantarray;
     return \@list;
@@ -292,10 +303,10 @@ sub getaccountdetails {
 
     my %options;
     %options = %{ _read_opts(@_) } if @_;
-    my ( $withrefstring, $withcookie ) = '0';
+    my ( $withrefstring, $withcookie );
     $withrefstring = $options{'withrefstring'}
         if exists $options{'withrefstring'};
-    $withcookie = $options{'withcookie'} if exists $options{'withrefstring'};
+    $withcookie = $options{'withcookie'} if exists $options{'withcookie'};
 
     my $sub = "getaccountdetails_v1";
     my $call = $self->_default_call($sub) or return;
@@ -307,7 +318,7 @@ sub getaccountdetails {
     my %accnt = ();
     foreach my $line (@lines) {
         my ( $key, $value ) = split( /=/, $line );
-        $accnt{"$key"} = $value;
+        $accnt{$key} = $value;
     }
     return %accnt if wantarray;
     return \%accnt;
@@ -321,16 +332,15 @@ sub setaccountdetails {
     my ($newpassword, $email,    $username,
         $mirror,      $mirror2,  $mirror3,
         $directstart, $jsconfig, $plustrafficmode
-    ) = 0;
-    croak "email is required, but missing" unless exists $options{'email'};
-    $email       = $options{'email'};
+    );
+    $email = $options{'email'} or croak "email is required, but missing";
     $newpassword = $options{'newpassword'} if exists $options{'newpassword'};
-    $username    = $options{'username'} if exists $options{'username'};
-    $mirror      = $options{'mirror'} if exists $options{'mirror'};
-    $mirror2     = $options{'mirror2'} if exists $options{'mirror2'};
-    $mirror3     = $options{'mirror3'} if exists $options{'mirror3'};
+    $username    = $options{'username'}    if exists $options{'username'};
+    $mirror      = $options{'mirror'}      if exists $options{'mirror'};
+    $mirror2     = $options{'mirror2'}     if exists $options{'mirror2'};
+    $mirror3     = $options{'mirror3'}     if exists $options{'mirror3'};
     $directstart = $options{'directstart'} if exists $options{'directstart'};
-    $jsconfig    = $options{'jsconfig'} if exists $options{'jsconfig'};
+    $jsconfig    = $options{'jsconfig'}    if exists $options{'jsconfig'};
     $plustrafficmode = $options{'plustrafficmode'}
         if exists $options{'plustrafficmode'};
 
@@ -384,31 +394,36 @@ sub filemigrator {
     my %options  = %{ _read_opts(@_) };
     my $fromtype = $options{fromtype}
         or croak "fromtype is required, but missing";
-    my $fromlogin = $options{fromlogin}
-        or croak "fromlogin is required, but missing";
-    my $frompassword = $options{frompassword}
-        or croak "frompassword is required, but missing";
-    my $totype = $options{totype} or croak "totype is required, but missing";
-    my $tologin = $options{tologin}
-        or croak "tologin is required, but missing";
-    my $topassword = $options{topassword}
-        or croak "topassword is required, but missing";
-    my $fileids_ref = $options{fileids}
-        or croak "fileids are required, but missing";
-    my $acceptfee = $options{acceptfee}
-        or croak "acceptfee is required, but missing";
-    my $linkedlists = $options{linkedlists} or 0;
-
     my $from;
     $from = "free" if ( lc($fromtype) eq 'free' );
     $from = "prem" if ( lc($fromtype) eq 'prem' );
     $from = "col"  if ( lc($fromtype) eq 'col' );
     croak "Unsupported fromtype $fromtype" unless $from;
 
+    my ( $fromlogin, $frompassword );
+    $fromlogin = $options{fromlogin}
+        or croak "fromlogin is required, but missing"
+        unless ( $from eq 'free' );
+    $frompassword = $options{frompassword}
+        or croak "frompassword is required, but missing"
+        unless ( $from eq 'free' );
+
+    my $totype = $options{totype} or croak "totype is required, but missing";
     my $to;
     $to = "prem" if ( lc($totype) eq 'prem' );
     $to = "col"  if ( lc($totype) eq 'col' );
     croak "Unsupported totype $totype" unless $to;
+
+    my $tologin = $options{tologin}
+        or croak "tologin is required, but missing";
+    my $topassword = $options{topassword}
+        or croak "topassword is required, but missing";
+
+    my $fileids_ref = $options{fileids}
+        or croak "fileids are required, but missing";
+    my $acceptfee = $options{acceptfee}
+        or croak "acceptfee is required, but missing";
+    my $linkedlists = $options{linkedlists} or undef;
 
     if ($linkedlists) {
         croak "Cannot moved linked lists from $fromtype to $totype"
@@ -430,9 +445,9 @@ sub filemigrator {
 
     my $sub = "filemigrator_v1";
     my $call = $self->_default_call($sub) or return;
-    $call .= "&srcaccount=${fromlogin}";
-    $call .= "&srcpassword=${frompassword}";
-    $call .= "&srcrealfolder=${fromfolder}" if $fromfolder;
+    $call .= "&srcaccount=${fromlogin}"      if $fromlogin;
+    $call .= "&srcpassword=${frompassword}"  if $frompassword;
+    $call .= "&srcrealfolder=${fromfolder}"  if $fromfolder;
     $call .= "&targetaccount=${tologin}";
     $call .= "&targetpassword=${topassword}";
     $call .= "&targetrealfolder=${tofolder}" if $tofolder;
@@ -448,7 +463,7 @@ sub checkfiles {
     my $self          = shift;
     my $fileids_ref   = shift or croak "fileids are required, but missing";
     my $filenames_ref = shift or croak "filenames are required, but missing";
-    my $md5           = shift or 0;
+    my $md5           = shift;
 
     my $fileids;
     if ( ref $fileids_ref eq 'ARRAY' ) {
@@ -556,7 +571,8 @@ sub getpointlogs {
     return \@list;
 }
 
-sub getreferrerlogs {
+sub getreferrerlogs
+ {
     my $self = shift;
 
     my $sub      = "getreferrerlogs_v1";
@@ -578,6 +594,18 @@ sub masspoll {
     $call .= "&vote=${vote}";
 
     return $self->_get_resp($call);
+}
+
+sub premiumzonelogs {
+    my $self = shift;
+
+    my $sub      = "premiumzonelogs_v1";
+    my $call     = $self->_default_call($sub) or return;
+    my $response = $self->_get_resp($call) or return;
+    my @rows     = split( /\n/, $response );
+
+    return @rows if wantarray;
+    return \@rows;
 }
 
 ### Internal Utilities
@@ -615,8 +643,14 @@ sub _valid_type {
 
 sub _is_init {
     my $self = shift;
+    if ( $self->{cookie} ) {
+        $self->type("prem");
+        $self->login("login");
+        $self->password("password");
+        return 1;
+    }
     return 1 if ( $self->{type} and $self->{login} and $self->{password} );
-    $self->{errstr} = "Not initialized with type/login/password";
+    $self->{errstr} = "Not initialized with type/login/password or cookie";
     return;
 }
 
