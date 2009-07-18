@@ -15,14 +15,16 @@ my ( $start_time, $stop_time, $size, $starting_position, $bytes_downloaded,
     or die $rs->errstr;
 
 ## Trafficshare bandwidth
-my ( $timestamp, $kbps ) =
-    $rs->trafficsharebandwidth( 'start_time', 'end_time' )
+my (@rows) = $rs->trafficsharebandwidth( 'start_time', 'end_time' )
     or die $rs->errstr;
+foreach (@rows) { my ( $timestamp, $kbps ) = split( /,/, $_ ); }
 
 ## Point logs
-my ( $date, $free_points, $prem_points ) = $rs->getpointlogs
-    or die $rs->errstr;
+my @rows = $rs->getpointlogs or die $rs->errstr;
+foreach (@rows) {
+    my ( $date, $free_points, $prem_points ) = split( /,/, $_ );
+}
 
 ## Referrer Logs
-my ( $timestamp, $refpoints, $fileid ) = $rs->getreferrerlogs
-    or die $rs->errstr;
+my @rows = $rs->getreferrerlogs or die $rs->errstr;
+foreach (@rows) { my ( $timestamp, $refpoints, $fileid ) = split( /,/, $_ ); }

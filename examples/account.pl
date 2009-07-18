@@ -53,5 +53,5 @@ my $num_of_lots = $rs->buylots('how many') or die $rs->errstr;
 ## Vote
 $rs->masspoll(
     '34534535342',    # Poll ID
-    'yes'             # Vote
+    '10'             # Vote
 ) or die $rs->errstr;
