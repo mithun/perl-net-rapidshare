@@ -5,7 +5,7 @@ use warnings;
 use Carp;
 use LWP::UserAgent;
 
-use version; our $VERSION = qv("0.0.1");
+use version; our $VERSION = qv("0.01");
 
 ### Interface
 my $rs_url       = "http://api.rapidshare.com/cgi-bin/rsapi.cgi?";
