@@ -6,7 +6,7 @@ Net::Rapidshare - Perl interface to the Rapidshare API
 
 =head1 VERSION
 
-This document describes Net::Rapidshare version 0.01
+This document describes Net::Rapidshare version 0.02
 
 =head1 SYNOPSIS
 
@@ -44,9 +44,6 @@ very many small requests or just a few unnecessary big requests. Everything you
 do will add POINTS to your IP address. If you exceed a certain point limit, API
 calls are denied for 30 minutes. If you exceed this limit multiple times, your
 account is banned as well.
-
-B<Note:> This module version does not provide functionality to manage link
-lists yet. It will be provided in future versions.
 
 =head1 METHODS
 
@@ -268,7 +265,7 @@ Check if a file has been uploaded successfully. Returns size on server
 	    '25298475092437502'    # Kill Code
 	) or die $rs->errstr;
 
-=item listfiles(\&options)
+=item listfiles(\%options)
 
 List all the files in your account. This is API Points intensive. Use
 sparingly.
@@ -544,6 +541,129 @@ Gets details about your earned Referrer Points
 
 =back
 
+=head2 Link Lists
+
+=over
+
+=item newlinklist(\%options)
+
+Create a new Link List. Returns the link list ID
+
+	my $new_ll_id = $rs->newlinklist(
+	    name     => 'newlist',             # Name
+	    headline => 'my new link list',    # Headline
+	    nickname => 'll1',                 # Nickname
+	    password => 'secret',              # Password
+	) or die $rs->errstr;
+
+=item newlinklistsubfolder(\%options)
+
+Create a sub link list (sub folder). Returns the sub folder ID
+
+	my $new_sub_id = $rs->newlinklistsubfolder(
+	    folderid    => 'MJHG67',           # Parent link list ID
+	    name        => 'newsublist',       # Name
+	    description => 'new links',        # Description
+	    password    => 'secret',           # Password
+	) or die $rs->errstr;
+
+=item copyfilestolinklist(\%options)
+
+Add files to a link list
+
+	$rs->copyfilestolinklist(
+	    folderid => 'MJHG67',                       # Parent link list ID
+	    fileids => [ '73876221', '7876523523' ],    # File IDs
+	) or die $rs->errstr;
+
+=item editlinklist(\%options)
+
+Edit a link list
+
+	$rs->editlinklist(
+	    folderid => 'HDKS778',                      # Link list ID
+	    name     => 'newlist',                      # Name
+	    headline => 'my new link list',             # Headline
+	    nickname => 'll1',                          # Nickname
+	    password => 'secret',                       # Password
+	) or die $rs->errstr;
+
+=item editlinklistentry(\%options)
+
+Edit either a file or a sub folder in a link list
+
+	## Edit a file entry
+	$rs->editlinklistentry(
+	    folderid    => 'HFGSK87',                   # Link list ID
+	    fileid      => '876872345',                 # File ID
+	    description => 'hey, get this file',        # Description
+	) or die $rs->errstr;
+
+Options -
+
+I<folderid> : The Link list ID that contains the entries
+
+I<fileid> : This can either be a file ID or a sub folder ID
+
+I<description> : Optional. Description will be applied to the C<fileid>
+
+I<password> : Optional. Secure a sub folder with the password. This option is
+invalid when C<fileid> is a file and not a sub folder
+
+=item getlinklist
+
+=item getlinklist(\%options)
+
+Get a listing of all of your link lists and (optionally) all link list entries.
+Returns a Data structure with each entry's details
+
+my $lists = $rs->getlinklist or die $rs->errstr; my @ids = keys %{$lists};
+foreach my $id (@ids) {     my $name     = $list->{$id}->{name};     my
+$headline = $list->{$id}->{headline}; }
+
+Options -
+
+I<folderid> : When provided with a folder ID, the returned list will contain
+the following details all entries in that link list.
+
+	'subfolderid'	The sub folder ID. '0' means root
+	'fileid'		File ID or Sub folder ID
+	'name'			Name
+	'size'			Size
+	'description'	Description
+	'addtime'		Time entry was added (UNIX)
+
+I<showsubs> : When set to true, the returned data structure will return all of
+the link lists as well as all entries within those lists. This cannot be used
+with C<folderid>. The following details are returned for each link list
+
+	'subfolderid'	The sub folder ID. '0' means root
+	'name'			File or Sub folder Name
+	'headline'		Headline
+	'views'			Number of views
+	'lastview'		Last viewed time (UNIX)
+	'password'		Password
+	'nickname'		Nickname
+
+=item deletelinklistentries(\%options)
+
+Delete file or sub folder entries
+
+	$rs->deletelinklistentries(
+	    folderid => 'HHSKL76',                      # Link list ID
+	    fileids => [ '73876221', '7876523523' ],    # File IDs to delete
+	) or die $rs->errstr;
+
+C<fileids> can be sub folder IDs as well.
+
+=item deletelinklist($linklistid)
+
+Delete a link list
+
+	$rs->deletelinklist('JHSDS7') or die $rs->errstr;
+
+=back
+
 =head1 ERROR HANDLING
 
 All methods return 'undef' and set $obj->errstr on errors. The $obj->errstr
@@ -553,28 +673,24 @@ will also contain any errors reported by Rapidshare.
 
 L<LWP::UserAgent>
 
-=head1 BUGS AND LIMITATIONS
+L<HTML::Entities>
 
-B<Note:> This module version does not provide functionality to manage link
-lists yet. It will be provided in future versions.
+=head1 SUPPORT
 
-No bugs have been reported.
-
-Please report any bugs or feature requests to
-C<bug-net-rapidshare@rt.cpan.org>, or through the web interface at
-L<http://rt.cpan.org>.
+Please report any bugs or feature requests at
+L<http://github.com/mithun/perl-net-rapidshare/issues>
 
 =head1 AUTHOR
 
-Mithun Ayachit  C<< <m0t0rbr3th@gmail.com> >>
+Mithun Ayachit  C<< <mithun at cpan dot org> >>
 
 =head1 LICENCE AND COPYRIGHT
 
-Copyright (c) 2009, Mithun Ayachit C<< <m0t0rbr3th@gmail.com> >>. All rights
+Copyright (c) 2009, Mithun Ayachit C<< <mithun at cpan dot org> >>. All rights
 reserved.
 
 This module is free software; you can redistribute it and/or modify it under
-the same terms as Perl itself. See L<perlartistic>.
+the same terms as Perl itself.
 
 =head1 DISCLAIMER OF WARRANTY
 

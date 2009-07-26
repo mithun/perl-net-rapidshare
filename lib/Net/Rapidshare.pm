@@ -4,8 +4,9 @@ use strict;
 use warnings;
 use Carp;
 use LWP::UserAgent;
+use HTML::Entities;
 
-use version; our $VERSION = qv("0.01");
+use version; our $VERSION = qv("0.02");
 
 ### Interface
 my $rs_url       = "http://api.rapidshare.com/cgi-bin/rsapi.cgi?";
@@ -608,13 +609,227 @@ sub premiumzonelogs {
     return \@rows;
 }
 
+sub newlinklist {
+    my $self = shift;
+
+    my %options = %{ _read_opts(@_) } if @_;
+    my ( $name, $headline, $nickname, $llpwd );
+    $name     = $options{name}     if exists $options{name};
+    $headline = $options{headline} if exists $options{headline};
+    $nickname = $options{nickname} if exists $options{nickname};
+    $llpwd    = $options{password} if exists $options{password};
+
+    my $sub = "newlinklist_v1";
+    my $call = $self->_default_call($sub) or return;
+    $call .= "&foldername=${name}"         if $name;
+    $call .= "&folderheadline=${headline}" if $headline;
+    $call .= "&nickname=${nickname}"       if $nickname;
+    $call .= "&folderpassword=${llpwd}"    if $llpwd;
+
+    return $self->_get_resp($call);
+}
+
+sub editlinklist {
+    my $self = shift;
+    croak "No options passed" unless @_;
+
+    my %options = %{ _read_opts(@_) };
+    my ( $id, $name, $headline, $nickname, $llpwd );
+    $id = $options{id} or croak "Linked List ID is required, but missing";
+    $name     = $options{name}     if exists $options{name};
+    $headline = $options{headline} if exists $options{headline};
+    $nickname = $options{nickname} if exists $options{nickname};
+    $llpwd    = $options{password} if exists $options{password};
+
+    my $sub = "editlinklist_v1";
+    my $call = $self->_default_call($sub) or return;
+    $call .= "&folderid=${id}";
+    $call .= "&foldername=${name}" if $name;
+    $call .= "&folderheadline=${headline}" if $headline;
+    $call .= "&nickname=${nickname}" if $nickname;
+    $call .= "&folderpassword=${llpwd}" if $llpwd;
+
+    return $self->_get_resp($call);
+}
+
+sub getlinklist {
+    my $self = shift;
+
+    my %options;
+    %options = %{ _read_opts(@_) } if @_;
+    my ( $id, $showsubs );
+    $id       = $options{id}       if exists $options{id};
+    $showsubs = $options{showsubs} if exists $options{showsubs};
+
+    my $sub = "getlinklist_v1";
+    my $call = $self->_default_call($sub) or return;
+    $call .= "&folderid=${id}"   if $id;
+    $call .= "&withsubfolders=1" if $showsubs;
+
+    my $response = $self->_get_resp($call) or return;
+    my @rows = split( /\n/, $response );
+
+    my $list;
+    if ($id) {
+        foreach (@rows) {
+            my ( $subid, $fileid, $name, $size, $description, $addtime ) =
+                split( /,/, $_ );
+            foreach ( $subid, $fileid, $name, $size, $description, $addtime )
+            {
+                $_ = decode_entities($_);
+            }
+            $list->{$id}->{subfolderid} = $subid;
+            $list->{$id}->{fileid}      = $fileid;
+            $list->{$id}->{name}        = $name;
+            $list->{$id}->{size}        = $size;
+            $list->{$id}->{description} = $description;
+            $list->{$id}->{addtime}     = $addtime;
+        }
+    }
+    else {
+        foreach (@rows) {
+            my ( $id, $subid, $name, $headline, $views, $lastview, $pwd,
+                $nick )
+                = split( /,/, $_ );
+            foreach ( $id, $subid, $name, $headline, $views, $lastview, $pwd,
+                $nick )
+            {
+                $_ = decode_entities($_);
+            }
+            $list->{$id}->{subfolderid} = $subid;
+            $list->{$id}->{name}        = $name;
+            $list->{$id}->{headline}    = $headline;
+            $list->{$id}->{views}       = $views;
+            $list->{$id}->{lastview}    = $lastview;
+            $list->{$id}->{password}    = $pwd;
+            $list->{$id}->{nickname}    = $nick;
+        }
+    }
+    return $list;
+}
+
+sub newlinklistsubfolder {
+    my $self = shift;
+    croak "No options passed" unless @_;
+
+    my %options = %{ _read_opts(@_) };
+    my ( $folderid, $subfolderid, $name, $password, $description );
+    $folderid = $options{folderid}
+        or croak "Folder ID is required, but missing";
+    $name = $options{name} or croak "Name is required, but missing";
+    $subfolderid = $options{subfolderid} if exists $options{subfolderid};
+    $password    = $options{password}    if exists $options{password};
+    $description = $options{description} if exists $options{description};
+
+    my $sub = "newlinklistsubfolder_v1";
+    my $call = $self->_default_call($sub) or return;
+    $call .= "&folderid=${folderid}";
+    $call .= "&newsubfoldername=${name}";
+    $call .= "&subfolderid=${subfolderid}" if $subfolderid;
+    $call .= "&newsubfolderpassword=${password}" if $password;
+    $call .= "&newsubfolderdescription=${description}" if $description;
+
+    return $self->_get_resp($call);
+}
+
+sub copyfilestolinklist {
+    my $self = shift;
+    croak "No options passed" unless @_;
+
+    my %options = %{ _read_opts(@_) };
+    my ( $folderid, $subfolderid, $fileids );
+    $folderid = $options{folderid}
+        or croak "Folder ID is required, but missing";
+    $subfolderid = $options{subfolderid} if exists $options{subfolderid};
+    croak "File IDs are required, but missing"
+        unless exists $options{fileids};
+    if ( ref $options{fileids} eq 'ARRAY' ) {
+        $fileids = join( ',', @{ $options{fileids} } );
+    }
+    else { $fileids = $options{fileids}; }
+
+    my $sub = "copyfilestolinklist_v1";
+    my $call = $self->_default_call($sub) or return;
+    $call .= "&folderid=${folderid}";
+    $call .= "&subfolderid=${subfolderid}" if $subfolderid;
+    $call .= "&files=${fileids}";
+
+    return $self->_get_resp($call);
+}
+
+sub deletelinklist {
+    my $self = shift;
+    my $folderid = shift or croak "Folder ID is required, but missing";
+
+    my $sub = "deletelinklist_v1";
+    my $call = $self->_default_call($sub) or return;
+    $call .= "&folderid=${folderid}";
+
+    return $self->_get_resp($call);
+}
+
+sub deletelinklistentries {
+    my $self = shift;
+    croak "No options passed" unless @_;
+
+    my %options = %{ _read_opts(@_) };
+    my ( $folderid, $subfolderid, $fileids );
+    $folderid = $options{folderid}
+        or croak "Folder ID is required, but missing";
+    $subfolderid = $options{subfolderid} if exists $options{subfolderid};
+    croak "File IDs are required, but missing"
+        unless exists $options{fileids};
+    if ( ref $options{fileids} eq 'ARRAY' ) {
+        $fileids = join( ',', @{ $options{fileids} } );
+    }
+    else { $fileids = $options{fileids}; }
+
+    my $sub = "deletelinklistentries_v1";
+    my $call = $self->_default_call($sub) or return;
+    $call .= "&folderid=${folderid}";
+    $call .= "&subfolderid=${subfolderid}" if $subfolderid;
+    $call .= "&files=${fileids}";
+
+    return $self->_get_resp($call);
+}
+
+sub editlinklistentry {
+    my $self = shift;
+    croak "No options passed" unless @_;
+
+    my %options = %{ _read_opts(@_) };
+    my ( $folderid, $subfolderid, $fileid, $desc, $pwd );
+    $folderid = $options{folderid}
+        or croak "Folder ID is required, but missing";
+    $subfolderid = $options{subfolderid} if exists $options{subfolderid};
+    $fileid = $options{fileid} or croak "File ID is required, but missing";
+    $desc = $options{description} if exists $options{description};
+    $pwd  = $options{password}    if exists $options{password};
+
+    if ( ( length($fileid) <= 4 ) and $pwd ) {
+        $self->{errstr} =
+            "Cannot change the password for a file, only a sub-linklist";
+        return;
+    }
+
+    my $sub = "editlinklistentry_v1";
+    my $call = $self->_default_call($sub) or return;
+    $call .= "&folderid=${folderid}";
+    $call .= "&subfolderid=${subfolderid}" if $subfolderid;
+    $call .= "&fileid=${fileid}";
+    $call .= "&newdescription=${desc}" if $desc;
+    $call .= "&newpassword=${pwd}" if $pwd;
+
+    return $self->_get_resp($call);
+}
+
 ### Internal Utilities
 sub _get_resp {
     my $self = shift;
     my $call = shift;
 
     my $ua = LWP::UserAgent->new;
-    $ua->agent("Rapidshare::API/$VERSION");
+    $ua->agent("Net::Rapidshare/$VERSION");
     $ua->proxy( 'http', $self->{proxy} ) if $self->{proxy};
 
     my $response = $ua->get($call);
@@ -656,8 +871,12 @@ sub _is_init {
 
 sub _read_opts {
     my %options;
-    if   ( ref @_ eq 'HASH' ) { %options   = %{@_}; }
-    else                      { (%options) = @_; }
+    if ( ref @_ eq 'HASH' ) { %options = %{@_}; }
+    else {
+        croak "Incorect number of options passed. Must be even"
+            if ( scalar @_ % 2 );
+        (%options) = @_;
+    }
     return \%options;
 }
 
@@ -687,7 +906,7 @@ Net::Rapidshare - Perl interface to the Rapidshare API
 
 =head1 VERSION
 
-This document describes Net::Rapidshare version 0.0.1
+This document describes Net::Rapidshare version 0.02
 
 =head1 SYNOPSIS
 
@@ -725,9 +944,6 @@ very many small requests or just a few unnecessary big requests. Everything you
 do will add POINTS to your IP address. If you exceed a certain point limit, API
 calls are denied for 30 minutes. If you exceed this limit multiple times, your
 account is banned as well.
-
-B<Note:> This module version does not provide functionality to manage link
-lists yet. It will be provided in future versions.
 
 =head1 METHODS
 
@@ -949,7 +1165,7 @@ Check if a file has been uploaded successfully. Returns size on server
 	    '25298475092437502'    # Kill Code
 	) or die $rs->errstr;
 
-=item listfiles(\&options)
+=item listfiles(\%options)
 
 List all the files in your account. This is API Points intensive. Use
 sparingly.
@@ -1225,6 +1441,129 @@ Gets details about your earned Referrer Points
 
 =back
 
+=head2 Link Lists
+
+=over
+
+=item newlinklist(\%options)
+
+Create a new Link List. Returns the link list ID
+
+	my $new_ll_id = $rs->newlinklist(
+	    name     => 'newlist',             # Name
+	    headline => 'my new link list',    # Headline
+	    nickname => 'll1',                 # Nickname
+	    password => 'secret',              # Password
+	) or die $rs->errstr;
+
+=item newlinklistsubfolder(\%options)
+
+Create a sub link list (sub folder). Returns the sub folder ID
+
+	my $new_sub_id = $rs->newlinklistsubfolder(
+	    folderid    => 'MJHG67',           # Parent link list ID
+	    name        => 'newsublist',       # Name
+	    description => 'new links',        # Description
+	    password    => 'secret',           # Password
+	) or die $rs->errstr;
+
+=item copyfilestolinklist(\%options)
+
+Add files to a link list
+
+	$rs->copyfilestolinklist(
+	    folderid => 'MJHG67',                       # Parent link list ID
+	    fileids => [ '73876221', '7876523523' ],    # File IDs
+	) or die $rs->errstr;
+
+=item editlinklist(\%options)
+
+Edit a link list
+
+	$rs->editlinklist(
+	    folderid => 'HDKS778',                      # Link list ID
+	    name     => 'newlist',                      # Name
+	    headline => 'my new link list',             # Headline
+	    nickname => 'll1',                          # Nickname
+	    password => 'secret',                       # Password
+	) or die $rs->errstr;
+
+=item editlinklistentry(\%options)
+
+Edit either a file or a sub folder in a link list
+
+	## Edit a file entry
+	$rs->editlinklistentry(
+	    folderid    => 'HFGSK87',                   # Link list ID
+	    fileid      => '876872345',                 # File ID
+	    description => 'hey, get this file',        # Description
+	) or die $rs->errstr;
+
+Options -
+
+I<folderid> : The Link list ID that contains the entries
+
+I<fileid> : This can either be a file ID or a sub folder ID
+
+I<description> : Optional. Description will be applied to the C<fileid>
+
+I<password> : Optional. Secure a sub folder with the password. This option is
+invalid when C<fileid> is a file and not a sub folder
+
+=item getlinklist
+
+=item getlinklist(\%options)
+
+Get a listing of all of your link lists and (optionally) all link list entries.
+Returns a Data structure with each entry's details
+
+my $lists = $rs->getlinklist or die $rs->errstr; my @ids = keys %{$lists};
+foreach my $id (@ids) {     my $name     = $list->{$id}->{name};     my
+$headline = $list->{$id}->{headline}; }
+
+Options -
+
+I<folderid> : When provided with a folder ID, the returned list will contain
+the following details all entries in that link list.
+
+	'subfolderid'	The sub folder ID. '0' means root
+	'fileid'		File ID or Sub folder ID
+	'name'			Name
+	'size'			Size
+	'description'	Description
+	'addtime'		Time entry was added (UNIX)
+
+I<showsubs> : When set to true, the returned data structure will return all of
+the link lists as well as all entries within those lists. This cannot be used
+with C<folderid>. The following details are returned for each link list
+
+	'subfolderid'	The sub folder ID. '0' means root
+	'name'			File or Sub folder Name
+	'headline'		Headline
+	'views'			Number of views
+	'lastview'		Last viewed time (UNIX)
+	'password'		Password
+	'nickname'		Nickname
+
+=item deletelinklistentries(\%options)
+
+Delete file or sub folder entries
+
+	$rs->deletelinklistentries(
+	    folderid => 'HHSKL76',                      # Link list ID
+	    fileids => [ '73876221', '7876523523' ],    # File IDs to delete
+	) or die $rs->errstr;
+
+C<fileids> can be sub folder IDs as well.
+
+=item deletelinklist($linklistid)
+
+Delete a link list
+
+	$rs->deletelinklist('JHSDS7') or die $rs->errstr;
+
+=back
+
 =head1 ERROR HANDLING
 
 All methods return 'undef' and set $obj->errstr on errors. The $obj->errstr
@@ -1234,28 +1573,24 @@ will also contain any errors reported by Rapidshare.
 
 L<LWP::UserAgent>
 
-=head1 BUGS AND LIMITATIONS
+L<HTML::Entities>
 
-B<Note:> This module version does not provide functionality to manage link
-lists yet. It will be provided in future versions.
+=head1 SUPPORT
 
-No bugs have been reported.
-
-Please report any bugs or feature requests to
-C<bug-net-rapidshare@rt.cpan.org>, or through the web interface at
-L<http://rt.cpan.org>.
+Please report any bugs or feature requests at
+L<http://github.com/mithun/perl-net-rapidshare/issues>
 
 =head1 AUTHOR
 
-Mithun Ayachit  C<< <m0t0rbr3th@gmail.com> >>
+Mithun Ayachit  C<< <mithun at cpan dot org> >>
 
 =head1 LICENCE AND COPYRIGHT
 
-Copyright (c) 2009, Mithun Ayachit C<< <m0t0rbr3th@gmail.com> >>. All rights
+Copyright (c) 2009, Mithun Ayachit C<< <mithun at cpan dot org> >>. All rights
 reserved.
 
 This module is free software; you can redistribute it and/or modify it under
-the same terms as Perl itself. See L<perlartistic>.
+the same terms as Perl itself.
 
 =head1 DISCLAIMER OF WARRANTY
 

@@ -1,4 +1,8 @@
-Net::Rapidshare version 0.01
+Net::Rapidshare version 0.02
+
+DESCRIPTION
+
+Perl interface to the Rapidshare API.
 
 INSTALLATION
 
@@ -16,11 +20,16 @@ Alternatively, to install with Module::Build, you can use the following commands
 	./Build test
 	./Build install
 
+USAGE
+
+* Please visit http://search.cpan.org/search?query=net+rapidshare for detailed information.
+
+* See examples/ for common usage.
 
 DEPENDENCIES
 
 LWP::UerAgent
-
+HTML::Entities
 
 COPYRIGHT AND LICENCE
 
