@@ -6,7 +6,7 @@ use Carp;
 use LWP::UserAgent;
 use HTML::Entities;
 
-use version; our $VERSION = qv("0.02");
+use version; our $VERSION = qv("0.03");
 
 ### Interface
 my $rs_url       = "http://api.rapidshare.com/cgi-bin/rsapi.cgi?";
@@ -906,7 +906,7 @@ Net::Rapidshare - Perl interface to the Rapidshare API
 
 =head1 VERSION
 
-This document describes Net::Rapidshare version 0.02
+This document describes Net::Rapidshare version 0.03
 
 =head1 SYNOPSIS
 
@@ -1517,33 +1517,36 @@ invalid when C<fileid> is a file and not a sub folder
 Get a listing of all of your link lists and (optionally) all link list entries.
 Returns a Data structure with each entry's details
 
-my $lists = $rs->getlinklist or die $rs->errstr; my @ids = keys %{$lists};
-foreach my $id (@ids) {     my $name     = $list->{$id}->{name};     my
-$headline = $list->{$id}->{headline}; }
+	my $lists = $rs->getlinklist or die $rs->errstr;
+	my @ids = keys %{$lists};
+	foreach my $id (@ids) {
+	    my $name     = $list->{$id}->{name};
+	    my $headline = $list->{$id}->{headline};
+	}
 
 Options -
 
 I<folderid> : When provided with a folder ID, the returned list will contain
 the following details all entries in that link list.
 
-	'subfolderid'	The sub folder ID. '0' means root
-	'fileid'		File ID or Sub folder ID
-	'name'			Name
-	'size'			Size
-	'description'	Description
-	'addtime'		Time entry was added (UNIX)
+	'subfolderid'   The sub folder ID. '0' means root
+	'fileid'        File ID or Sub folder ID
+	'name'          Name
+	'size'          Size
+	'description'   Description
+	'addtime'       Time entry was added (UNIX)
 
 I<showsubs> : When set to true, the returned data structure will return all of
 the link lists as well as all entries within those lists. This cannot be used
 with C<folderid>. The following details are returned for each link list
 
-	'subfolderid'	The sub folder ID. '0' means root
-	'name'			File or Sub folder Name
-	'headline'		Headline
-	'views'			Number of views
-	'lastview'		Last viewed time (UNIX)
-	'password'		Password
-	'nickname'		Nickname
+	'subfolderid'   The sub folder ID. '0' means root
+	'name'          File or Sub folder Name
+	'headline'      Headline
+	'views'         Number of views
+	'lastview'      Last viewed time (UNIX)
+	'password'      Password
+	'nickname'      Nickname
 
 =item deletelinklistentries(\%options)
 

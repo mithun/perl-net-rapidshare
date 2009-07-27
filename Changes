@@ -4,3 +4,5 @@ Revision history for Net::Rapidshare
        Initial release.
 0.02   Sun Jul 26 12:50:00 2009
        Added link lists
+0.03   2009-07-27
+       Fix formatting bugs in POD

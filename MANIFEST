@@ -4,5 +4,6 @@ MANIFEST
 Makefile.PL
 README
 lib/Net/Rapidshare.pm
+lib/Net/Rapidshare.pod
 t/00.load.t
 t/10.basics.t
