@@ -6,3 +6,5 @@ Revision history for Net::Rapidshare
        Added link lists
 0.03   2009-07-27
        Fix formatting bugs in POD
+0.04   2009-07-27
+       Fixed Typos, extra files in distro

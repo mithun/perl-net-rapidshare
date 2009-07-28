@@ -6,7 +6,7 @@ use Carp;
 use LWP::UserAgent;
 use HTML::Entities;
 
-use version; our $VERSION = qv("0.03");
+use version; our $VERSION = qv("0.04");
 
 ### Interface
 my $rs_url       = "http://api.rapidshare.com/cgi-bin/rsapi.cgi?";
@@ -956,7 +956,7 @@ account is banned as well.
 Construct a new Net::Rapidshare object
 
 	my $rs = my $rs = Net::Rapidshare->new();
-	my $rs = my $rs = Net::Rapidshare->new(\%potions);
+	my $rs = my $rs = Net::Rapidshare->new(\%options);
 
 Options allowed:
 
