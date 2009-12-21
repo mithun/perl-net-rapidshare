@@ -1,0 +1,11 @@
+^_build
+^Build$
+^blib
+~$
+\.bak$
+^MANIFEST\.SKIP$
+CVS
+^\.git
+^\.
+DS_Store
+\._

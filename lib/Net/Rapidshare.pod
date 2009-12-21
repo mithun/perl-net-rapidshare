@@ -6,7 +6,7 @@ Net::Rapidshare - Perl interface to the Rapidshare API
 
 =head1 VERSION
 
-This document describes Net::Rapidshare version 0.05
+This document describes Net::Rapidshare version 0.06
 
 =head1 SYNOPSIS
 

@@ -6,7 +6,7 @@ use Carp;
 use LWP::UserAgent;
 use HTML::Entities;
 
-our $VERSION = 0.05;
+our $VERSION = 0.06;
 
 ### Interface
 my $rs_url       = "http://api.rapidshare.com/cgi-bin/rsapi.cgi?";
@@ -930,7 +930,7 @@ Net::Rapidshare - Perl interface to the Rapidshare API
 
 =head1 VERSION
 
-This document describes Net::Rapidshare version 0.05
+This document describes Net::Rapidshare version 0.06
 
 =head1 SYNOPSIS
 

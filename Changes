@@ -1,5 +1,8 @@
 Revision history for Net::Rapidshare
 
+0.06   2009-12-20
+       * Fixed META.yml error
+
 0.05   2009-12-20
        * Added getreward & setreward
        * Added 'fileids' options for listfiles
