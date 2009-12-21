@@ -2,6 +2,7 @@ Build.PL
 Changes
 MANIFEST
 Makefile.PL
+META.yml
 README
 lib/Net/Rapidshare.pm
 lib/Net/Rapidshare.pod

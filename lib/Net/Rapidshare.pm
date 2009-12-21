@@ -6,7 +6,7 @@ use Carp;
 use LWP::UserAgent;
 use HTML::Entities;
 
-use version; our $VERSION = qv("0.04");
+our $VERSION = 0.05;
 
 ### Interface
 my $rs_url       = "http://api.rapidshare.com/cgi-bin/rsapi.cgi?";
@@ -124,15 +124,13 @@ sub checkincomplete {
 }
 
 sub renamefile {
-    my $self     = shift;
-    my $fileid   = shift or croak "fileid is required, but missing";
-    my $killcode = shift or croak "killcode is required, but missing";
-    my $newname  = shift or croak "new name is required, but missing";
+    my $self    = shift;
+    my $fileid  = shift or croak "fileid is required, but missing";
+    my $newname = shift or croak "new name is required, but missing";
 
     my $sub = "renamefile_v1";
     my $call = $self->_default_call($sub) or return;
     $call .= "&fileid=${fileid}";
-    $call .= "&killcode=${killcode}";
     $call .= "&newname=${newname}";
 
     return $self->_get_resp($call);
@@ -263,11 +261,12 @@ sub listfiles {
 
     my %options;
     %options = %{ _read_opts(@_) } if @_;
-    my ( $realfolder, $filename, $fields, $order, $desc );
+    my ( $realfolder, $filename, $fileids, $fields, $order, $desc );
     $realfolder = "all";
     $realfolder = $options{'realfolder'} if exists $options{'realfolder'};
     $filename   = $options{'filename'} if exists $options{'filename'};
     $fields     = $options{'fields'} if exists $options{'fields'};
+    $fileids    = $options{'fileids'} if exists $options{'fileids'};
     $order      = $options{'order'} if exists $options{'order'};
     $desc       = $options{'desc'} if exists $options{'desc'};
 
@@ -276,6 +275,7 @@ sub listfiles {
     $call .= "&realfolder=${realfolder}";
     $call .= "&filename=${filename}" if $filename;
     $call .= "&fields=${fields}" if $fields;
+    $call .= "&fileids=${fileids}" if $fileids;
     $call .= "&order=${order}" if $order;
     $call .= "&desc=1" if $desc;
 
@@ -306,7 +306,7 @@ sub getaccountdetails {
     %options = %{ _read_opts(@_) } if @_;
     my ( $withrefstring, $withcookie );
     $withrefstring = $options{'withrefstring'}
-        if exists $options{'withrefstring'};
+      if exists $options{'withrefstring'};
     $withcookie = $options{'withcookie'} if exists $options{'withcookie'};
 
     my $sub = "getaccountdetails_v1";
@@ -330,7 +330,8 @@ sub setaccountdetails {
 
     my %options;
     %options = %{ _read_opts(@_) } if @_;
-    my ($newpassword, $email,    $username,
+    my (
+        $newpassword, $email,    $username,
         $mirror,      $mirror2,  $mirror3,
         $directstart, $jsconfig, $plustrafficmode
     );
@@ -338,12 +339,12 @@ sub setaccountdetails {
     $newpassword = $options{'newpassword'} if exists $options{'newpassword'};
     $username    = $options{'username'}    if exists $options{'username'};
     $mirror      = $options{'mirror'}      if exists $options{'mirror'};
-    $mirror2     = $options{'mirror2'}     if exists $options{'mirror2'};
-    $mirror3     = $options{'mirror3'}     if exists $options{'mirror3'};
+    $mirror  .= "," . $options{'mirror2'} if exists $options{'mirror2'};
+    $mirror3 .= "," . $options{'mirror3'} if exists $options{'mirror3'};
     $directstart = $options{'directstart'} if exists $options{'directstart'};
     $jsconfig    = $options{'jsconfig'}    if exists $options{'jsconfig'};
     $plustrafficmode = $options{'plustrafficmode'}
-        if exists $options{'plustrafficmode'};
+      if exists $options{'plustrafficmode'};
 
     my $sub = "setaccountdetails_v1";
     my $call = $self->_default_call($sub) or return;
@@ -356,7 +357,7 @@ sub setaccountdetails {
     $call .= "&directstart=${directstart}" if $directstart;
     $call .= "&jsconfig=${jsconfig}" if $jsconfig;
     $call .= "&plustrafficmode=${plustrafficmode}"
-        if exists $options{'plustrafficmode'};
+      if exists $options{'plustrafficmode'};
 
     return $self->_get_resp($call);
 }
@@ -394,7 +395,7 @@ sub filemigrator {
 
     my %options  = %{ _read_opts(@_) };
     my $fromtype = $options{fromtype}
-        or croak "fromtype is required, but missing";
+      or croak "fromtype is required, but missing";
     my $from;
     $from = "free" if ( lc($fromtype) eq 'free' );
     $from = "prem" if ( lc($fromtype) eq 'prem' );
@@ -403,11 +404,11 @@ sub filemigrator {
 
     my ( $fromlogin, $frompassword );
     $fromlogin = $options{fromlogin}
-        or croak "fromlogin is required, but missing"
-        unless ( $from eq 'free' );
+      or croak "fromlogin is required, but missing"
+      unless ( $from eq 'free' );
     $frompassword = $options{frompassword}
-        or croak "frompassword is required, but missing"
-        unless ( $from eq 'free' );
+      or croak "frompassword is required, but missing"
+      unless ( $from eq 'free' );
 
     my $totype = $options{totype} or croak "totype is required, but missing";
     my $to;
@@ -416,19 +417,19 @@ sub filemigrator {
     croak "Unsupported totype $totype" unless $to;
 
     my $tologin = $options{tologin}
-        or croak "tologin is required, but missing";
+      or croak "tologin is required, but missing";
     my $topassword = $options{topassword}
-        or croak "topassword is required, but missing";
+      or croak "topassword is required, but missing";
 
     my $fileids_ref = $options{fileids}
-        or croak "fileids are required, but missing";
+      or croak "fileids are required, but missing";
     my $acceptfee = $options{acceptfee}
-        or croak "acceptfee is required, but missing";
+      or croak "acceptfee is required, but missing";
     my $linkedlists = $options{linkedlists} or undef;
 
     if ($linkedlists) {
         croak "Cannot moved linked lists from $fromtype to $totype"
-            unless ( ( $from eq 'prem' ) and ( $to eq 'prem' ) );
+          unless ( ( $from eq 'prem' ) and ( $to eq 'prem' ) );
     }
 
     my $movetype = "${from}${to}";
@@ -490,7 +491,7 @@ sub checkfiles {
 
     foreach my $line (@lines) {
         my ( $id, $name, $size, $server, $status, $mirror, $md5 ) =
-            split( /,/, $line );
+          split( /,/, $line );
         $list->{$id}->{name}   = $name;
         $list->{$id}->{size}   = $size;
         $list->{$id}->{server} = $server;
@@ -539,7 +540,7 @@ sub trafficsharebandwidth {
     my $end   = shift or croak "End time is required, but missing";
 
     croak "Invalid time format $start"
-        unless ( $start =~ /^{[[:digit:]]}{10}$/ );
+      unless ( $start =~ /^{[[:digit:]]}{10}$/ );
     croak "Invalid time format $end" unless ( $end =~ /^{[[:digit:]]}{10}$/ );
 
     my $sub = "trafficsharebandwidth_v1";
@@ -673,9 +674,8 @@ sub getlinklist {
     if ($id) {
         foreach (@rows) {
             my ( $subid, $fileid, $name, $size, $description, $addtime ) =
-                split( /,/, $_ );
-            foreach ( $subid, $fileid, $name, $size, $description, $addtime )
-            {
+              split( /,/, $_ );
+            foreach ( $subid, $fileid, $name, $size, $description, $addtime ) {
                 $_ = decode_entities($_);
             }
             $list->{$id}->{subfolderid} = $subid;
@@ -688,9 +688,8 @@ sub getlinklist {
     }
     else {
         foreach (@rows) {
-            my ( $id, $subid, $name, $headline, $views, $lastview, $pwd,
-                $nick )
-                = split( /,/, $_ );
+            my ( $id, $subid, $name, $headline, $views, $lastview, $pwd, $nick )
+              = split( /,/, $_ );
             foreach ( $id, $subid, $name, $headline, $views, $lastview, $pwd,
                 $nick )
             {
@@ -715,7 +714,7 @@ sub newlinklistsubfolder {
     my %options = %{ _read_opts(@_) };
     my ( $folderid, $subfolderid, $name, $password, $description );
     $folderid = $options{folderid}
-        or croak "Folder ID is required, but missing";
+      or croak "Folder ID is required, but missing";
     $name = $options{name} or croak "Name is required, but missing";
     $subfolderid = $options{subfolderid} if exists $options{subfolderid};
     $password    = $options{password}    if exists $options{password};
@@ -739,10 +738,10 @@ sub copyfilestolinklist {
     my %options = %{ _read_opts(@_) };
     my ( $folderid, $subfolderid, $fileids );
     $folderid = $options{folderid}
-        or croak "Folder ID is required, but missing";
+      or croak "Folder ID is required, but missing";
     $subfolderid = $options{subfolderid} if exists $options{subfolderid};
     croak "File IDs are required, but missing"
-        unless exists $options{fileids};
+      unless exists $options{fileids};
     if ( ref $options{fileids} eq 'ARRAY' ) {
         $fileids = join( ',', @{ $options{fileids} } );
     }
@@ -775,10 +774,10 @@ sub deletelinklistentries {
     my %options = %{ _read_opts(@_) };
     my ( $folderid, $subfolderid, $fileids );
     $folderid = $options{folderid}
-        or croak "Folder ID is required, but missing";
+      or croak "Folder ID is required, but missing";
     $subfolderid = $options{subfolderid} if exists $options{subfolderid};
     croak "File IDs are required, but missing"
-        unless exists $options{fileids};
+      unless exists $options{fileids};
     if ( ref $options{fileids} eq 'ARRAY' ) {
         $fileids = join( ',', @{ $options{fileids} } );
     }
@@ -800,7 +799,7 @@ sub editlinklistentry {
     my %options = %{ _read_opts(@_) };
     my ( $folderid, $subfolderid, $fileid, $desc, $pwd );
     $folderid = $options{folderid}
-        or croak "Folder ID is required, but missing";
+      or croak "Folder ID is required, but missing";
     $subfolderid = $options{subfolderid} if exists $options{subfolderid};
     $fileid = $options{fileid} or croak "File ID is required, but missing";
     $desc = $options{description} if exists $options{description};
@@ -808,7 +807,7 @@ sub editlinklistentry {
 
     if ( ( length($fileid) <= 4 ) and $pwd ) {
         $self->{errstr} =
-            "Cannot change the password for a file, only a sub-linklist";
+          "Cannot change the password for a file, only a sub-linklist";
         return;
     }
 
@@ -819,6 +818,31 @@ sub editlinklistentry {
     $call .= "&fileid=${fileid}";
     $call .= "&newdescription=${desc}" if $desc;
     $call .= "&newpassword=${pwd}" if $pwd;
+
+    return $self->_get_resp($call);
+}
+
+sub getreward {
+    my $self = shift;
+
+    my $sub      = "getreward_v1";
+    my $call     = $self->_default_call($sub) or return;
+    my $response = $self->_get_resp($call) or return;
+    my @rows     = split( /\n/, $response, 2 );
+    return split( /,/, $rows[0] ), $rows[1];
+}
+
+sub setreward {
+    my $self = shift;
+    my ( $rewardid, $data ) = @_;
+
+    croak "Reward ID missing"   unless $rewardid;
+    croak "Reward data missing" unless $data;
+
+    my $sub = "setreward_v1";
+    my $call = $self->_default_call($sub) or return;
+    $call .= "&reward=$rewardid";
+    $call .= "&parameters=$data";
 
     return $self->_get_resp($call);
 }
@@ -874,7 +898,7 @@ sub _read_opts {
     if ( ref @_ eq 'HASH' ) { %options = %{@_}; }
     else {
         croak "Incorect number of options passed. Must be even"
-            if ( scalar @_ % 2 );
+          if ( scalar @_ % 2 );
         (%options) = @_;
     }
     return \%options;
@@ -906,7 +930,7 @@ Net::Rapidshare - Perl interface to the Rapidshare API
 
 =head1 VERSION
 
-This document describes Net::Rapidshare version 0.03
+This document describes Net::Rapidshare version 0.05
 
 =head1 SYNOPSIS
 
@@ -944,6 +968,10 @@ very many small requests or just a few unnecessary big requests. Everything you
 do will add POINTS to your IP address. If you exceed a certain point limit, API
 calls are denied for 30 minutes. If you exceed this limit multiple times, your
 account is banned as well.
+
+B<Note:> v0.05 includes changes to various methods to reflect Rapidshares API
+updates. The changes can potentially break existing code. Please read the
+'Changes' file for more details.
 
 =head1 METHODS
 
@@ -1051,13 +1079,13 @@ as its value
 Returned Hash contains following keys -
 
 Premium Account: accountid, type, servertime, addtime, validuntil, username,
-directstart, protectfiles, rsantihack, plustrafficmode, mirror, mirror2,
-mirror3, jsconfig, email, lots, points, curfiles, curspace, bodkb, prempoints,
-premkbleft, refpoints, refrate, refstring, cookie
+directstart, protectfiles, rsantihack, plustrafficmode, mirrors, jsconfig,
+email, lots, fpoints, ppoints, curfiles, curspace, bodkb, premkbleft,
+ppointrate, refstring, cookie
 
 Collectors Account: accountid, type, servertime, addtime, username, email,
-jsconfig, rsantihack, lots, points, curfiles, curspace, prempoints, refpoints,
-refrate, refstring, cookie
+jsconfig, rsantihack, lots, fpoints, ppoints, curfiles, curspace, ppointrate,
+refstring, cookie
 
 =item setaccountdetails(\%options)
 
@@ -1085,9 +1113,9 @@ Optional. New account password
 
 Optional. New username/alias
 
-=item mirror,mirror2,mirror3
+=item mirror
 
-Optional. Choose what mirrors you want to use
+Optional. Choose what mirrors you want to use. Comma seperated list
 
 =item directstart
 
@@ -1190,7 +1218,11 @@ Realfolder ID to list files from. Defaults to all
 
 =item filename
 
-List all files who's file names are that specified.
+List all files who's file names are that specified. Helps in finding dupes
+
+=item fileids
+
+A comma seperated list of I<fileids> to list
 
 =item fields
 
@@ -1198,7 +1230,8 @@ Fields to include in the result list. I<fileid> is always included. This should
 be a comma separated string.
 
 You can use any of the following =>
-downloads,lastdownload,filename,size,killcode,serverid,type,x,y,realfolder,bodtype,uploadtime,ip,md5hex.
+downloads,lastdownload,filename,size,killcode,serverid,type,x,y,realfolder,
+bodtype,killdeadline,uploadtime,ip,md5hex.
 
 =item order
 
@@ -1216,7 +1249,6 @@ Rename a file
 
 	$rs->renamefile(
 	    '23424342',            # file ID
-	    '817269847623843',     # Kill code
 	    'newname'              # New name
 	) or die $rs->errtsr;
 
@@ -1437,7 +1469,7 @@ Gets details about your earned RapidPoints
 Gets details about your earned Referrer Points
 
 	my @rows = $rs->getreferrerlogs or die $rs->errstr;
-	foreach (@rows) { my ( $timestamp, $refpoints, $fileid ) = split( /,/, $_ ); }
+	foreach (@rows) { my ( $timestamp, $refpoints, $fileid, $confirmed ) = split( /,/, $_ ); }
 
 =back
 
@@ -1564,6 +1596,31 @@ C<fileids> can be sub folder IDs as well.
 Delete a link list
 
 	$rs->deletelinklist('JHSDS7') or die $rs->errstr;
+
+=back
+
+=head2 Rewards
+
+=over
+
+=item getreward
+
+Get details of your active reward. Only one reward can be active at a time on
+your account.
+
+	my (
+	$reward_id,		# Reward ID
+	$time,			# Unix timestamp when ordered
+	$email,			# Email used at time of ordering
+	$active_ppr,	# Active PPointRate
+	$data			# Data needed to deliver reward. Used by setreward
+	) = $rs->getreward() or die $rs->errstr;
+
+=item setreward($reward_id, $reward_data)
+
+Saves details about your ordered RapidShare reward
+
+	$rs->setreward($reward_id, $reward_data) or die $rs->errstr;
 
 =back
 

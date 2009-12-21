@@ -6,7 +6,7 @@ Net::Rapidshare - Perl interface to the Rapidshare API
 
 =head1 VERSION
 
-This document describes Net::Rapidshare version 0.04
+This document describes Net::Rapidshare version 0.05
 
 =head1 SYNOPSIS
 
@@ -44,6 +44,10 @@ very many small requests or just a few unnecessary big requests. Everything you
 do will add POINTS to your IP address. If you exceed a certain point limit, API
 calls are denied for 30 minutes. If you exceed this limit multiple times, your
 account is banned as well.
+
+B<Note:> v0.05 includes changes to various methods to reflect Rapidshares API
+updates. The changes can potentially break existing code. Please read the
+'Changes' file for more details.
 
 =head1 METHODS
 
@@ -151,13 +155,13 @@ as its value
 Returned Hash contains following keys -
 
 Premium Account: accountid, type, servertime, addtime, validuntil, username,
-directstart, protectfiles, rsantihack, plustrafficmode, mirror, mirror2,
-mirror3, jsconfig, email, lots, points, curfiles, curspace, bodkb, prempoints,
-premkbleft, refpoints, refrate, refstring, cookie
+directstart, protectfiles, rsantihack, plustrafficmode, mirrors, jsconfig,
+email, lots, fpoints, ppoints, curfiles, curspace, bodkb, premkbleft,
+ppointrate, refstring, cookie
 
 Collectors Account: accountid, type, servertime, addtime, username, email,
-jsconfig, rsantihack, lots, points, curfiles, curspace, prempoints, refpoints,
-refrate, refstring, cookie
+jsconfig, rsantihack, lots, fpoints, ppoints, curfiles, curspace, ppointrate,
+refstring, cookie
 
 =item setaccountdetails(\%options)
 
@@ -185,9 +189,9 @@ Optional. New account password
 
 Optional. New username/alias
 
-=item mirror,mirror2,mirror3
+=item mirror
 
-Optional. Choose what mirrors you want to use
+Optional. Choose what mirrors you want to use. Comma seperated list
 
 =item directstart
 
@@ -290,7 +294,11 @@ Realfolder ID to list files from. Defaults to all
 
 =item filename
 
-List all files who's file names are that specified.
+List all files who's file names are that specified. Helps in finding dupes
+
+=item fileids
+
+A comma seperated list of I<fileids> to list
 
 =item fields
 
@@ -298,7 +306,8 @@ Fields to include in the result list. I<fileid> is always included. This should
 be a comma separated string.
 
 You can use any of the following =>
-downloads,lastdownload,filename,size,killcode,serverid,type,x,y,realfolder,bodtype,uploadtime,ip,md5hex.
+downloads,lastdownload,filename,size,killcode,serverid,type,x,y,realfolder,
+bodtype,killdeadline,uploadtime,ip,md5hex.
 
 =item order
 
@@ -316,7 +325,6 @@ Rename a file
 
 	$rs->renamefile(
 	    '23424342',            # file ID
-	    '817269847623843',     # Kill code
 	    'newname'              # New name
 	) or die $rs->errtsr;
 
@@ -537,7 +545,7 @@ Gets details about your earned RapidPoints
 Gets details about your earned Referrer Points
 
 	my @rows = $rs->getreferrerlogs or die $rs->errstr;
-	foreach (@rows) { my ( $timestamp, $refpoints, $fileid ) = split( /,/, $_ ); }
+	foreach (@rows) { my ( $timestamp, $refpoints, $fileid, $confirmed ) = split( /,/, $_ ); }
 
 =back
 
@@ -664,6 +672,31 @@ C<fileids> can be sub folder IDs as well.
 Delete a link list
 
 	$rs->deletelinklist('JHSDS7') or die $rs->errstr;
+
+=back
+
+=head2 Rewards
+
+=over
+
+=item getreward
+
+Get details of your active reward. Only one reward can be active at a time on
+your account.
+
+	my (
+	$reward_id,		# Reward ID
+	$time,			# Unix timestamp when ordered
+	$email,			# Email used at time of ordering
+	$active_ppr,	# Active PPointRate
+	$data			# Data needed to deliver reward. Used by setreward
+	) = $rs->getreward() or die $rs->errstr;
+
+=item setreward($reward_id, $reward_data)
+
+Saves details about your ordered RapidShare reward
+
+	$rs->setreward($reward_id, $reward_data) or die $rs->errstr;
 
 =back
 

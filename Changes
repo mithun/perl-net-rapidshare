@@ -1,10 +1,22 @@
 Revision history for Net::Rapidshare
 
-0.01   Sat Jul 18 11:14:24 2009
-       Initial release.
-0.02   Sun Jul 26 12:50:00 2009
-       Added link lists
-0.03   2009-07-27
-       Fix formatting bugs in POD
+0.05   2009-12-20
+       * Added getreward & setreward
+       * Added 'fileids' options for listfiles
+       * mirror2,mirror3 options in setaccountdetails now creates a single
+          'mirror' string to pass to Rapidshare 
+       * Rename file now requires login. Does not use killcodes anymore
+       * Flipped 'Changes' around so that latest changes are on top
+       * Added META.yml
+
 0.04   2009-07-27
        Fixed Typos, extra files in distro
+
+0.03   2009-07-27
+       Fix formatting bugs in POD
+
+0.02   Sun Jul 26 12:50:00 2009
+       Added link lists
+
+0.01   Sat Jul 18 11:14:24 2009
+       Initial release.

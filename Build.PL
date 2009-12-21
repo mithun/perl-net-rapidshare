@@ -9,9 +9,8 @@ my $builder = Module::Build->new(
     dist_version_from => 'lib/Net/Rapidshare.pm',
     requires          => {
         'Test::More'     => 0,
-        'version'        => 0,
         'LWP::UserAgent' => 0,
-'HTML::Entities' => 0,
+        'HTML::Entities' => 0,
     },
     add_to_cleanup => ['Net::Rapidshare-*'],
 );
