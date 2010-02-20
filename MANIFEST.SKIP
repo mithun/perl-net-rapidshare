@@ -9,3 +9,4 @@ CVS
 ^\.
 DS_Store
 \._
+^MYMETA.yml$

@@ -6,7 +6,7 @@ use Carp;
 use LWP::UserAgent;
 use HTML::Entities;
 
-our $VERSION = 0.06;
+our $VERSION = 0.07;
 
 ### Interface
 my $rs_url       = "http://api.rapidshare.com/cgi-bin/rsapi.cgi?";
@@ -364,9 +364,15 @@ sub setaccountdetails {
 
 sub enablersantihack {
     my $self = shift;
+    my %options;
+    %options = %{ _read_opts(@_) } if @_;
+    my $noemail;
+    $noemail = $options{'noemail'} if exists $options{'noemail'};
 
     my $sub = "enablersantihack_v1";
     my $call = $self->_default_call($sub) or return;
+    $call .= "&noemail=1" if $noemail;
+
     return $self->_get_resp($call);
 }
 
@@ -930,7 +936,7 @@ Net::Rapidshare - Perl interface to the Rapidshare API
 
 =head1 VERSION
 
-This document describes Net::Rapidshare version 0.06
+This document describes Net::Rapidshare version 0.07
 
 =head1 SYNOPSIS
 
@@ -1033,7 +1039,7 @@ Use I<http> instead of I<https> for all API calls. This is the default
 Use I<https> instead of I<http> for all API calls. Using this will B<double>
 your points for all API calls.
 
-	$rs->secure
+	$rs->secure;
 
 =item proxy
 
@@ -1134,13 +1140,13 @@ Optional. Modes valid are 0=No auto conversion. 1=Only TrafficShare conversion.
 
 =back
 
-=item enablersantihack
+=item enablersantihack({'noemail' => 1});
 
 Enabled the RS AntiHack mode. This mode is highly recommended for every
 account, as it makes account manipulations impossible without unlocking it
-first.
+first. If the 'noemail' option is true, then an email with unlock code is not sent.
 
-	$rs->enablersantihack or die $rs->errstr;
+	my $unlock_code = $rs->enablersantihack or die $rs->errstr;
 
 =item sendrsantihackmail
 

@@ -13,6 +13,12 @@ WriteMakefile(
         'LWP::UserAgent' => 0,
         'HTML::Entities' => 0,
     },
+    META_MERGE => {
+        resources => {
+            homepage   => 'http://search.cpan.org/dist/Net-Rapidshare/',
+            repository => 'http://github.com/mithun/perl-net-rapidshare',
+        },
+    },
     dist  => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean => { FILES    => 'Net::Rapidshare-*' },
 );

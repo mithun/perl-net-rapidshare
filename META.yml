@@ -1,23 +1,25 @@
 ---
-name: Net-Rapidshare
-version: 0.06
+abstract: 'Perl interface to the Rapidshare API'
 author:
   - 'Mithun Ayachit <mithun at cpan dot org>'
-abstract: Perl interface to the Rapidshare API
+configure_requires:
+  Module::Build: 0.36
+generated_by: 'Module::Build version 0.3603'
 license: perl
-resources:
-  license: http://dev.perl.org/licenses/
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: Net-Rapidshare
+provides:
+  Net::Rapidshare:
+    file: lib/Net/Rapidshare.pm
+    version: 0.07
 requires:
   HTML::Entities: 0
   LWP::UserAgent: 0
   Test::More: 0
-configure_requires:
-  Module::Build: 0.35
-provides:
-  Net::Rapidshare:
-    file: lib/Net/Rapidshare.pm
-    version: 0.06
-generated_by: Module::Build version 0.35
-meta-spec:
-  url: http://module-build.sourceforge.net/META-spec-v1.4.html
-  version: 1.4
+resources:
+  homepage: http://search.cpan.org/dist/Net-Rapidshare/
+  license: http://dev.perl.org/licenses/
+  repository: http://github.com/mithun/perl-net-rapidshare
+version: 0.07

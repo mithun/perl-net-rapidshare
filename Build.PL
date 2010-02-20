@@ -12,6 +12,12 @@ my $builder = Module::Build->new(
         'LWP::UserAgent' => 0,
         'HTML::Entities' => 0,
     },
+    meta_merge => {
+        resources => {
+            homepage   => 'http://search.cpan.org/dist/Net-Rapidshare/',
+            repository => 'http://github.com/mithun/perl-net-rapidshare',
+        },
+    },
     add_to_cleanup => ['Net::Rapidshare-*'],
 );
 

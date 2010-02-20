@@ -6,7 +6,6 @@ examples/folders.pl
 examples/linkedlists.pl
 examples/logs.pl
 lib/Net/Rapidshare.pm
-lib/Net/Rapidshare.pod
 Makefile.PL
 MANIFEST
 META.yml

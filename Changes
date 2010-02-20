@@ -1,5 +1,9 @@
 Revision history for Net::Rapidshare
 
+0.07   2010-02-20
+       * Updated enablersantihack
+       * Removed POD file. POD now resides in PM
+
 0.06   2009-12-20
        * Fixed META.yml error
 
