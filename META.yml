@@ -13,7 +13,7 @@ name: Net-Rapidshare
 provides:
   Net::Rapidshare:
     file: lib/Net/Rapidshare.pm
-    version: 0.07
+    version: 0.08
 requires:
   HTML::Entities: 0
   LWP::UserAgent: 0
@@ -22,4 +22,4 @@ resources:
   homepage: http://search.cpan.org/dist/Net-Rapidshare/
   license: http://dev.perl.org/licenses/
   repository: http://github.com/mithun/perl-net-rapidshare
-version: 0.07
+version: 0.08

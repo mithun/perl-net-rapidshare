@@ -1,5 +1,10 @@
 Revision history for Net::Rapidshare
 
+0.08   2010-05-09
+       * Removed buylots
+       * Added remogets functions
+       * Added ppcforextension
+
 0.07   2010-02-20
        * Updated enablersantihack
        * Removed POD file. POD now resides in PM

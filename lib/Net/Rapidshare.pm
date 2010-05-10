@@ -6,7 +6,7 @@ use Carp;
 use LWP::UserAgent;
 use HTML::Entities;
 
-our $VERSION = 0.07;
+our $VERSION = 0.08;
 
 ### Interface
 my $rs_url       = "http://api.rapidshare.com/cgi-bin/rsapi.cgi?";
@@ -16,11 +16,10 @@ sub new {
     my $class = shift;
     my %h     = ();
     if (@_) {
-        my %valid = (
-            "type"     => 1,
-            "login"    => 1,
-            "password" => 1,
-            "cookie"   => 1,
+        my %valid = ( "type"     => 1,
+                      "login"    => 1,
+                      "password" => 1,
+                      "cookie"   => 1,
         );
         croak "Uneven number of options passed" if ( @_ % 2 );
         (%h) = @_;
@@ -330,10 +329,9 @@ sub setaccountdetails {
 
     my %options;
     %options = %{ _read_opts(@_) } if @_;
-    my (
-        $newpassword, $email,    $username,
-        $mirror,      $mirror2,  $mirror3,
-        $directstart, $jsconfig, $plustrafficmode
+    my ( $newpassword, $email,    $username,
+         $mirror,      $mirror2,  $mirror3,
+         $directstart, $jsconfig, $plustrafficmode
     );
     $email = $options{'email'} or croak "email is required, but missing";
     $newpassword = $options{'newpassword'} if exists $options{'newpassword'};
@@ -558,17 +556,6 @@ sub trafficsharebandwidth {
     return split( /\n/, $response );
 }
 
-sub buylots {
-    my $self = shift;
-    my $new = shift or croak "Number of new lots is required, but missing";
-
-    my $sub = "buylots_v1";
-    my $call = $self->_default_call($sub) or return;
-    $call .= "&newlots=${new}";
-
-    return $self->_get_resp($call);
-}
-
 sub getpointlogs {
     my $self = shift;
 
@@ -697,7 +684,7 @@ sub getlinklist {
             my ( $id, $subid, $name, $headline, $views, $lastview, $pwd, $nick )
               = split( /,/, $_ );
             foreach ( $id, $subid, $name, $headline, $views, $lastview, $pwd,
-                $nick )
+                      $nick )
             {
                 $_ = decode_entities($_);
             }
@@ -828,27 +815,81 @@ sub editlinklistentry {
     return $self->_get_resp($call);
 }
 
-sub getreward {
+sub remotegets_add {
     my $self = shift;
+    my @urls = @_;
 
-    my $sub      = "getreward_v1";
-    my $call     = $self->_default_call($sub) or return;
-    my $response = $self->_get_resp($call) or return;
-    my @rows     = split( /\n/, $response, 2 );
-    return split( /,/, $rows[0] ), $rows[1];
+    croak "No URLs provided" unless @urls;
+
+    my $list;
+    foreach (@urls) { chomp; $list .= "$_\n"; }
+
+    my $sub = "remotegets_v1";
+    my $call = $self->_default_call($sub) or return;
+    $call .= "&cmd=addjob";
+    $call .= "&urls=$list";
+
+    return $self->_get_resp($call);
 }
 
-sub setreward {
+sub remotegets_killfinished {
     my $self = shift;
-    my ( $rewardid, $data ) = @_;
 
-    croak "Reward ID missing"   unless $rewardid;
-    croak "Reward data missing" unless $data;
-
-    my $sub = "setreward_v1";
+    my $sub = "remotegets_v1";
     my $call = $self->_default_call($sub) or return;
-    $call .= "&reward=$rewardid";
-    $call .= "&parameters=$data";
+    $call .= "&cmd=killfinishedjobs";
+
+    return $self->_get_resp($call);
+}
+
+sub remotegets_kill {
+    my $self = shift;
+    my @ids  = @_;
+
+    croak "No Job IDs provided" unless @ids;
+    my $jobids = join ',', @ids;
+
+    my $sub  = "remotegets_v1";
+    my $call = $self->_default_call($sub);
+    $call .= "&cmd=killjobs";
+    $call .= "&jobids=$jobids";
+
+    return $self->_get_resp($call);
+}
+
+sub remotegets_list {
+    my $self = shift;
+
+    my $sub  = "remotegets_v1";
+    my $call = $self->_default_call($sub);
+
+    my $response = $self->_get_resp($call) or return;
+    my @rows = split /\n/, $response;
+
+    my %list;
+    foreach my $row (@rows) {
+        my ( $id, $size, $status, $fileid, $url ) = split /,/, $row;
+        $list{$id}{id}     = $id;
+        $list{$id}{size}   = $size;
+        $list{$id}{status} = $status;
+        $list{$id}{fileid} = $fileid;
+        $list{$id}{url}    = $url;
+    }
+
+    return %list if wantarray;
+    return \%list;
+}
+
+sub ppcforextension {
+    my $self = shift;
+    my ( $user, $pwd ) = @_;
+
+    croak "Prepaid username and password is required" unless ( $user and $pwd );
+
+    my $sub  = "ppcforextension_v1";
+    my $call = $self->_default_call($sub);
+    $call .= "&ppcaccountid=$user";
+    $call .= "&ppcpassword=$pwd";
 
     return $self->_get_resp($call);
 }
@@ -936,7 +977,7 @@ Net::Rapidshare - Perl interface to the Rapidshare API
 
 =head1 VERSION
 
-This document describes Net::Rapidshare version 0.07
+This document describes Net::Rapidshare version 0.08
 
 =head1 SYNOPSIS
 
@@ -1144,7 +1185,8 @@ Optional. Modes valid are 0=No auto conversion. 1=Only TrafficShare conversion.
 
 Enabled the RS AntiHack mode. This mode is highly recommended for every
 account, as it makes account manipulations impossible without unlocking it
-first. If the 'noemail' option is true, then an email with unlock code is not sent.
+first. If the 'noemail' option is true, then an email with unlock code is not
+sent.
 
 	my $unlock_code = $rs->enablersantihack or die $rs->errstr;
 
@@ -1160,14 +1202,9 @@ Disables the RS AntiHack mode, allowing account changes
 
 	$rs->disablersantihack('unlock code') or die $rs->errstr;
 
-=item buylots
+=item ppcforextension($prepaid_user, $prepaid_pwd)
 
-Exchanges RapidPoints to lots. You will get one lot for 50 RapidPoints. You
-cannot own more than 50.000 lots.
-
-Return total number of lots after buying.
-
-	my $num_of_lots = $rs->buylots('how many') or die $rs->errstr;
+Apply a prepaid purchase to your account
 
 =item masspoll($pollid, $vote)
 
@@ -1395,6 +1432,35 @@ The Status value can be -
 	5=Anonymous file locked, because it has more than 10 downloads already
 	6=File OK (TrafficShare direct download with enabled logging. Read our privacy policy to see what is logged.)
 
+=item remotegets_add(@urls)
+
+Download files into your Rapidshare account.
+
+	$rs->remotegets_add(@urls) or die $rs->errstr;
+
+=item remotegets_killfinished()
+
+Deletes all finished jobs from the remote queue.
+
+=item remotegets_kill(@ids)
+
+Deletes jobs with the job identifiers ID. Note that its not possible to delete
+jobs currently being processed. You will not get an error, but the job is just
+not deleted.
+
+=item remotegets_list()
+
+Get a list of remote downloads that are currently in the queue
+
+	my %list = $rs->remotegets_list() or die $rs->errstr;
+	foreach my $job ( keys %list ) {
+	    print "Job ID: "        . $job{id};
+	    print "File Size: "     . $job{size};
+	    print "Job Status: "    . $job{status};
+	    print "File ID: "       . $job{fileid};
+	    print "Download URL: "  . $job{url};
+	}
+
 =back
 
 =head2 Folders
@@ -1605,31 +1671,6 @@ Delete a link list
 
 =back
 
-=head2 Rewards
-
-=over
-
-=item getreward
-
-Get details of your active reward. Only one reward can be active at a time on
-your account.
-
-	my (
-	$reward_id,		# Reward ID
-	$time,			# Unix timestamp when ordered
-	$email,			# Email used at time of ordering
-	$active_ppr,	# Active PPointRate
-	$data			# Data needed to deliver reward. Used by setreward
-	) = $rs->getreward() or die $rs->errstr;
-
-=item setreward($reward_id, $reward_data)
-
-Saves details about your ordered RapidShare reward
-
-	$rs->setreward($reward_id, $reward_data) or die $rs->errstr;
-
-=back
-
 =head1 ERROR HANDLING
 
 All methods return 'undef' and set $obj->errstr on errors. The $obj->errstr
@@ -1678,3 +1719,4 @@ LOSS OF DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR
 THIRD PARTIES OR A FAILURE OF THE SOFTWARE TO OPERATE WITH ANY OTHER SOFTWARE),
 EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGES.
+
