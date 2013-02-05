@@ -1,7 +1,0 @@
-use Test::More tests => 1;
-
-BEGIN {
-use_ok( 'Net::Rapidshare' );
-}
-
-diag( "Testing Net::Rapidshare $Net::Rapidshare::VERSION" );
